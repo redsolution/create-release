@@ -58,6 +58,18 @@ mkdir gunicorn
 
 echo "Migrating database"
 bin/django migrate
+
+python -m compileall .
+find . -name "*.py" -not -name "gunicorn_conf.py" -type f -delete
+rm -fr .git
+rm -fr parts/
+rm .installed.cfg
+rm .mr.developer.cfg
+rm .gitignore
+rm travis.cfg
+rm .travis.yml
+rm develop.cfg
+rm buildout.cfg
 }
 
 function get_xabberxmppserver() {
