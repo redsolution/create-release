@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e
 ###-------------------------------------------------------------------
 ### File    : create_xabber_server
 ### Author  : Andrey Gagarin <andrey.gagarin@redsolution.com>
@@ -39,7 +39,11 @@ cp -r $root_dir/xabber-web/version.js $install_path/xmppserverui/static/xabberwe
 }
 
 function get_makeself() {
-git clone https://github.com/redsolution/makeself.git
+if [ -d "makeself" ]; then
+    echo "Makeself is already installed"
+else
+    git clone https://github.com/redsolution/makeself.git
+fi
 }
 
 function install_ui() {
@@ -48,6 +52,7 @@ cd $install_path
 echo $install_path
 git clone https://github.com/redsolution/xabber-server-panel.git xmppserverui
 cd xmppserverui/
+git checkout develop
 git fetch
 	  
 echo "Build"
@@ -59,6 +64,7 @@ mkdir gunicorn
 echo "Migrating database"
 bin/django migrate
 
+set +e
 python -m compileall .
 find . -name "*.py" -not -name "gunicorn_conf.py" -type f -delete
 rm -fr .git
@@ -77,6 +83,7 @@ echo "Get xabber-xmpp-server"
 rm -fr xabberserver
 git clone https://github.com/redsolution/xabber-xmpp-server.git xabberserver
 cd xabberserver
+git checkout develop
 ./autogen.sh
 ./configure --enable-pgsql
 make
@@ -90,6 +97,9 @@ get_makeself
 makeself=$root_dir/makeself/makeself.sh
 get_xabberxmppserver
 install_path="$root_dir/xabberserver/rel/ejabberd"
+erts_path=$(find $install_path -name "erts*" -type d)
+erts_version=$(echo $erts_path | awk -F "/" '{print $NF}')
+EXP00="s#ERTS_VER#$erts_version#g"
 install_ui
 echo "Copy system libs and psql libs"
 cp -r $root_dir/xabber-server-files/psql_stuff/* $install_path/
@@ -100,8 +110,8 @@ cp $root_dir/xabber-server-files/server.pem $install_path/
 cp $root_dir/xabber-server-files/001-site.conf $install_path/
 cp $root_dir/xabber-server-files/001-site-ssl.conf $install_path/
 cp $root_dir/xabber-server-files/xabberserver.service0 $install_path/
-cp $root_dir/xabber-server-files/erl $install_path/erts-8.2.1/bin/erl
-cp $root_dir/xabber-server-files/ejabberdctl $install_path/bin/ejabberdctl
+cp $root_dir/xabber-server-files/erl $erts_path/bin/erl
+sh -c "sed -e $EXP00 <$root_dir/xabber-server-files/ejabberdctl >$install_path/bin/ejabberdctl"
 cp -r $root_dir/xabber-server-files/linux/* $install_path/lib/
 rm $install_path/etc/ejabberd/ejabberd.yml
 get_xabber_web
