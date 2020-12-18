@@ -46,6 +46,22 @@ else
 fi
 }
 
+function install_new_ui() {
+echo "Clone new builder"
+cd $root_dir
+rm -fr panel-builder
+git clone gitolite3@git.redsolution.ru:/xabber/xmppserver/panel-builder
+cd panel-builder
+make
+cp ../requirements.txt xmppserverui/requirements.txt
+make
+mkdir -p $install_path/xmppserverui/static/xabberweb/
+rsync -aHv dist/xabber-server/ $install_path/xmppserverui/
+cd $install_path/xmppserverui/
+echo "Start migration"
+./xabber-server migrate
+}
+
 function install_ui() {
 echo "Clone xmppserverui"
 cd $install_path
@@ -54,10 +70,10 @@ git clone https://github.com/redsolution/xabber-server-panel.git xmppserverui
 cd xmppserverui/
 git checkout develop
 git fetch
-	  
+
 echo "Build"
 buildout
-	    
+
 echo "Create directory for debug logs"
 mkdir gunicorn
 
@@ -83,7 +99,7 @@ echo "Get xabber-xmpp-server"
 rm -fr xabberserver
 git clone https://github.com/redsolution/xabber-xmpp-server.git xabberserver
 cd xabberserver
-git checkout develop
+git checkout new_stanzas
 ./autogen.sh
 ./configure --enable-pgsql
 make
@@ -100,16 +116,21 @@ install_path="$root_dir/xabberserver/rel/ejabberd"
 erts_path=$(find $install_path -name "erts*" -type d)
 erts_version=$(echo $erts_path | awk -F "/" '{print $NF}')
 EXP00="s#ERTS_VER#$erts_version#g"
-install_ui
+install_new_ui
 echo "Copy system libs and psql libs"
 cp -r $root_dir/xabber-server-files/psql_stuff/* $install_path/
+cp -r $root_dir/xabberserver/db_migration $install_path/
+cp -r $root_dir/xabberserver/config_migrations $install_path/
+cp $root_dir/xabberserver/version $install_path/
 cp $root_dir/xabber-server-files/setup.sh $install_path/
 cp $root_dir/xabber-server-files/dig $install_path/
 cp $root_dir/xabber-server-files/xabber.text $install_path/
 cp $root_dir/xabber-server-files/server.pem $install_path/
 cp $root_dir/xabber-server-files/001-site.conf $install_path/
 cp $root_dir/xabber-server-files/001-site-ssl.conf $install_path/
+cp $root_dir/xabber-server-files/well-known.apache $install_path/
 cp $root_dir/xabber-server-files/xabberserver.service0 $install_path/
+cp $root_dir/xabber-server-files/xabber_server.ini0 $install_path/
 cp $root_dir/xabber-server-files/erl $erts_path/bin/erl
 sh -c "sed -e $EXP00 <$root_dir/xabber-server-files/ejabberdctl >$install_path/bin/ejabberdctl"
 cp -r $root_dir/xabber-server-files/linux/* $install_path/lib/
