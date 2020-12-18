@@ -53,8 +53,6 @@ rm -fr panel-builder
 git clone gitolite3@git.redsolution.ru:/xabber/xmppserver/panel-builder
 cd panel-builder
 make
-cp ../requirements.txt xmppserverui/requirements.txt
-make
 mkdir -p $install_path/xmppserverui/static/xabberweb/
 rsync -aHv dist/xabber-server/ $install_path/xmppserverui/
 cd $install_path/xmppserverui/
