@@ -25,14 +25,12 @@ rm -fr xabber-web
 echo "Get a new custom xabber web"
 git clone https://github.com/redsolution/xabber-web.git
 cd xabber-web
-git checkout xabber-server
+git checkout develop
 cp -r $root_dir/xabber-web/images/ $install_path/xmppserverui/static/xabberweb/
 cp -r $root_dir/xabber-web/fonts/ $install_path/xmppserverui/static/xabberweb/
 cp -r $root_dir/xabber-web/dist/ $install_path/xmppserverui/static/xabberweb/
 cp -r $root_dir/xabber-web/sounds/ $install_path/xmppserverui/static/xabberweb/
 cp -r $root_dir/xabber-web/css/ $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/quill.js $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/quill.snow.css $install_path/xmppserverui/static/xabberweb/
 cp -r $root_dir/xabber-web/firebase-messaging-sw.js $install_path/xmppserverui/static/xabberweb/
 cp -r $root_dir/xabber-web/manifest.json $install_path/xmppserverui/static/xabberweb/
 cp -r $root_dir/xabber-web/version.js $install_path/xmppserverui/static/xabberweb/
