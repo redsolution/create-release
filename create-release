@@ -26,14 +26,14 @@ echo "Get a new custom xabber web"
 git clone https://github.com/redsolution/xabber-web.git
 cd xabber-web
 git checkout develop
-cp -r $root_dir/xabber-web/images/ $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/fonts/ $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/dist/ $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/sounds/ $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/css/ $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/firebase-messaging-sw.js $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/manifest.json $install_path/xmppserverui/static/xabberweb/
-cp -r $root_dir/xabber-web/version.js $install_path/xmppserverui/static/xabberweb/
+cp -r $root_dir/xabber-web/images/ $panel_dir/static/xabberweb/
+cp -r $root_dir/xabber-web/fonts/ $panel_dir/static/xabberweb/
+cp -r $root_dir/xabber-web/dist/ $panel_dir/static/xabberweb/
+cp -r $root_dir/xabber-web/sounds/ $panel_dir/static/xabberweb/
+cp -r $root_dir/xabber-web/css/ $panel_dir/static/xabberweb/
+cp -r $root_dir/xabber-web/firebase-messaging-sw.js $panel_dir/static/xabberweb/
+cp -r $root_dir/xabber-web/manifest.json $panel_dir/static/xabberweb/
+cp -r $root_dir/xabber-web/version.js $panel_dir/static/xabberweb/
 }
 
 function get_makeself() {
@@ -51,50 +51,19 @@ rm -fr panel-builder
 git clone gitolite3@git.redsolution.ru:/xabber/xmppserver/panel-builder
 cd panel-builder
 make
-mkdir -p $install_path/xmppserverui/static/xabberweb/
-rsync -aHv dist/xabber-server/ $install_path/xmppserverui/
-cd $install_path/xmppserverui/
+mkdir -p $panel_dir
+rsync -aHv dist/xabber-server/ $panel_dir/
+cd $panel_dir
 echo "Start migration"
 ./xabber-server migrate
 }
 
-function install_ui() {
-echo "Clone xmppserverui"
-cd $install_path
-echo $install_path
-git clone https://github.com/redsolution/xabber-server-panel.git xmppserverui
-cd xmppserverui/
-git checkout develop
-git fetch
-
-echo "Build"
-buildout
-
-echo "Create directory for debug logs"
-mkdir gunicorn
-
-echo "Migrating database"
-bin/django migrate
-
-set +e
-python -m compileall .
-find . -name "*.py" -not -name "gunicorn_conf.py" -type f -delete
-rm -fr .git
-rm -fr parts/
-rm .installed.cfg
-rm .mr.developer.cfg
-rm .gitignore
-rm travis.cfg
-rm .travis.yml
-rm develop.cfg
-rm buildout.cfg
-}
 
 function get_xabberxmppserver() {
 echo "Get xabber-xmpp-server"
-rm -fr xabberserver
-git clone https://github.com/redsolution/xabber-xmpp-server.git xabberserver
-cd xabberserver
+rm -fr xabber-xmpp-server
+git clone https://github.com/redsolution/xabber-xmpp-server.git xabber-xmpp-server
+cd xabber-xmpp-server
 git checkout new_stanzas
 ./autogen.sh
 ./configure --enable-pgsql
@@ -102,36 +71,43 @@ make
 echo "make rel"
 make clean-rel
 make rel
+cd $root_dir
+mkdir -p $xmppserver_dir
+rsync -aH xabber-xmpp-server/rel/ejabberd/ $xmppserver_dir/
 }
 
 root_dir=$(pwd)
+rel_dir=$root_dir/rel
+panel_dir=$rel_dir/panel
+xmppserver_dir=$rel_dir/xmppserver
+rm -fr $rel_dir
+mkdir $rel_dir
 get_makeself
 makeself=$root_dir/makeself/makeself.sh
 get_xabberxmppserver
-install_path="$root_dir/xabberserver/rel/ejabberd"
-erts_path=$(find $install_path -name "erts*" -type d)
+erts_path=$(find $xmppserver_dir -name "erts*" -type d)
 erts_version=$(echo $erts_path | awk -F "/" '{print $NF}')
 EXP00="s#ERTS_VER#$erts_version#g"
 install_new_ui
 echo "Copy system libs and psql libs"
-cp -r $root_dir/xabber-server-files/psql_stuff/* $install_path/
-cp -r $root_dir/xabberserver/db_migration $install_path/
-cp -r $root_dir/xabberserver/config_migrations $install_path/
-cp $root_dir/xabberserver/version $install_path/
-cp $root_dir/xabber-server-files/setup.sh $install_path/
-cp $root_dir/xabber-server-files/dig $install_path/
-cp $root_dir/xabber-server-files/xabber.text $install_path/
-cp $root_dir/xabber-server-files/server.pem $install_path/
-cp $root_dir/xabber-server-files/001-site.conf $install_path/
-cp $root_dir/xabber-server-files/001-site-default.conf $install_path/
-cp $root_dir/xabber-server-files/001-site-ssl.conf $install_path/
-cp $root_dir/xabber-server-files/well-known.apache $install_path/
-cp $root_dir/xabber-server-files/xabberserver.service0 $install_path/
-cp $root_dir/xabber-server-files/xabber_server.ini0 $install_path/
+cp -r $root_dir/xabber-server-files/psql_stuff/* $rel_dir/
+cp -r $root_dir/xabber-xmpp-server/db_migration $rel_dir/
+cp -r $root_dir/xabber-xmpp-server/config_migrations $rel_dir/
+cp $root_dir/xabber-xmpp-server/version $rel_dir/
+cp $root_dir/xabber-server-files/setup.sh $rel_dir/
+cp $root_dir/xabber-server-files/dig $rel_dir/
+cp $root_dir/xabber-server-files/xabber.text $rel_dir/
+cp $root_dir/xabber-server-files/server.pem $rel_dir/
+cp $root_dir/xabber-server-files/001-site.conf $rel_dir/
+cp $root_dir/xabber-server-files/001-site-default.conf $rel_dir/
+cp $root_dir/xabber-server-files/001-site-ssl.conf $rel_dir/
+cp $root_dir/xabber-server-files/well-known.apache $rel_dir/
+cp $root_dir/xabber-server-files/xabberserver.service0 $rel_dir/
+cp $root_dir/xabber-server-files/xabber_server.ini0 $rel_dir/
 cp $root_dir/xabber-server-files/erl $erts_path/bin/erl
-sh -c "sed -e $EXP00 <$root_dir/xabber-server-files/ejabberdctl >$install_path/bin/ejabberdctl"
-cp -r $root_dir/xabber-server-files/linux/* $install_path/lib/
-rm $install_path/etc/ejabberd/ejabberd.yml
+sh -c "sed -e $EXP00 <$root_dir/xabber-server-files/ejabberdctl >$xmppserver_dir/bin/ejabberdctl"
+cp -r $root_dir/xabber-server-files/linux/* $xmppserver_dir/lib/
+rm $xmppserver_dir/etc/ejabberd/ejabberd.yml
 get_xabber_web
 cd $root_dir
-$makeself $install_path xabberserver_installer.bin "Xabber Server Installer" ./setup.sh
+$makeself $rel_dir xabberserver_installer.bin "Xabber Server Installer" ./setup.sh
